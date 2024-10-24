@@ -2,14 +2,14 @@
 - name: Include OS-specific variables
   include_vars: "main.yml"
 
-- name: Check if Jenkins user exists
+- name: Check if workspace user exists
   getent:
     database: passwd
     key: "{{ workspace_user }}"
-  register: jenkins_user_exists
+  register: workspace_user_exists
   ignore_errors: yes
 
-- name: Create workspace userif not
+- name: Create workspace user if not
   user:
     name: "{{ workspace_user }}"
     group: "{{ workspace_group }}"
@@ -17,7 +17,7 @@
     home: "{{ workspace_root }}"
     create_home: yes
     system: yes
-  when: jenkins_user_exists.failed is defined and jenkins_user_exists.failed
+  when: workspace_user_exists.failed is defined and jenkins_user_exists.failed
 
 - name: Ensure workspace directory permissions
   file:
@@ -28,8 +28,6 @@
     mode: '0755'
   with_items:
     - "{{ workspace_root }}"
-    - "{{ flutter_path }}"
-    - "{{ android_sdk_path }}"
 
 - name: Setup Debian-based system
   include_tasks: setup-Debian.yml
