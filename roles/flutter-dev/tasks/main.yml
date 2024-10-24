@@ -17,7 +17,7 @@
     home: "{{ workspace_root }}"
     create_home: yes
     system: yes
-  when: workspace_user_exists.failed is defined and jenkins_user_exists.failed
+  when: workspace_user_exists.failed is defined and workspace_user_exists.failed
 
 - name: Ensure workspace directory permissions
   file:
@@ -25,7 +25,7 @@
     state: directory
     owner: "{{ workspace_user }}"
     group: "{{ workspace_group }}"
-    mode: '0755'
+    mode: '0777'
   with_items:
     - "{{ workspace_root }}"
 
