@@ -1,4 +1,5 @@
+workspace_user: jenkins
+workspace_group: jenkins
+workspace_root: "/home/jenkins"
 java_version: "17"
 fastlane_version: "latest"
-
-
