@@ -1,7 +1,0 @@
----
-- name: Install Fastlane via gem
-  gem:
-    name: fastlane
-    state: present
-    user_install: no
-    version: "{{ fastlane_version }}"
