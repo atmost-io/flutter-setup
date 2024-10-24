@@ -1,0 +1,18 @@
+---
+- name: Setup Flutter Development Environment
+  hosts: flutter_agents
+  become: yes
+  vars:
+    workspace_user: jenkins
+    workspace_group: jenkins
+    workspace_root: "/home/jenkins"
+    flutter_version: "3.16.3"
+    java_version: "17"
+    fastlane_version: "latest"
+    android_sdk_version: "33"
+    android_build_tools_version: "33.0.0"
+    flutter_path: "{{ workspace_root }}/flutter"
+    android_sdk_path: "{{ workspace_root }}/android-sdk"
+  
+  roles:
+    - flutter-dev

@@ -1,0 +1,109 @@
+- name: Check if Flutter is installed
+  stat:
+    path: "{{ flutter_path }}/bin/flutter"
+  register: flutter_binary
+
+- name: Create Flutter installation directory
+  file:
+    path: "{{ flutter_path }}"
+    state: directory
+    owner: "{{ workspace_user }}"
+    group: "{{ workspace_group }}"
+    mode: '0755'
+  when: not flutter_binary.stat.exists
+
+- name: Configure Git settings for large repo clone
+  git_config:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    scope: system
+  become: yes
+  with_items:
+    - { name: 'http.postBuffer', value: '524288000' }
+    - { name: 'https.postBuffer', value: '524288000' }
+    - { name: 'http.lowSpeedLimit', value: '1000' }
+    - { name: 'http.lowSpeedTime', value: '600' }
+    - { name: 'protocol.version', value: '2' }
+  when: not flutter_binary.stat.exists
+
+- name: Download and install Flutter SDK
+  git:
+    repo: https://github.com/flutter/flutter.git
+    dest: "{{ flutter_path }}"
+    version: "{{ flutter_version }}"
+    depth: 1  # Shallow clone for faster download
+  become_user: "{{ workspace_user }}"
+  environment:
+    GIT_HTTP_MAX_REQUEST_BUFFER: '100M'
+    GIT_TRACE: 1
+  register: git_clone
+  retries: 3
+  delay: 10
+  until: git_clone is success
+  when: not flutter_binary.stat.exists
+
+- name: Ensure proper permissions after clone
+  file:
+    path: "{{ flutter_path }}"
+    state: directory
+    owner: "{{ workspace_user }}"
+    group: "{{ workspace_group }}"
+    mode: '0755'
+    recurse: yes
+  when: not flutter_binary.stat.exists
+
+- name: Add Flutter to PATH
+  blockinfile:
+    path: "{{ workspace_root }}/.bashrc"
+    owner: "{{ workspace_user }}"
+    group: "{{ workspace_group }}"
+    create: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - FLUTTER PATH"
+    block: |
+      export PATH="$PATH:{{ flutter_path }}/bin"
+      export ANDROID_HOME="{{ android_sdk_path }}"
+
+- name: Source bashrc
+  shell: source {{ workspace_root }}/.bashrc
+  args:
+    executable: /bin/bash
+  become_user: "{{ workspace_user }}"
+  changed_when: false
+
+- name: Run Flutter precache for Android
+  command: "{{ flutter_path }}/bin/flutter precache --android"
+  become_user: "{{ workspace_user }}"
+  register: flutter_precache_android
+  async: 900
+  poll: 30
+
+- name: Run Flutter precache for iOS
+  command: "{{ flutter_path }}/bin/flutter precache --ios"
+  become_user: "{{ workspace_user }}"
+  register: flutter_precache_ios
+  async: 900
+  poll: 30
+  when: need_ios | default(false)
+
+- name: Check precache progress
+  async_status:
+    jid: "{{ flutter_precache_result.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 60
+  delay: 30
+  when: flutter_precache_result.ansible_job_id is defined
+
+- name: Run Flutter doctor
+  command: "{{ flutter_path }}/bin/flutter doctor"
+  become_user: "{{ workspace_user }}"
+  register: flutter_doctor_result
+  retries: 2
+  delay: 5
+  until: flutter_doctor_result is success
+  ignore_errors: yes
+
+- name: Display Flutter doctor report
+  debug:
+    var: flutter_doctor_result.stdout_lines
+

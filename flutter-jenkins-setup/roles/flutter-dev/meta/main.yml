@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  role_name: flutter-dev
+  author: Your Name
+  description: Flutter development environment setup for Jenkins agents
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+  galaxy_tags:
+    - flutter
+    - android
+    - development
+    - ci
+dependencies: []
