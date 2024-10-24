@@ -1,0 +1,39 @@
+---
+- name: Include OS-specific variables
+  include_vars: "main.yml"
+
+- name: Check if Jenkins user exists
+  getent:
+    database: passwd
+    key: "{{ workspace_user }}"
+  register: jenkins_user_exists
+  ignore_errors: yes
+
+- name: Create workspace userif not
+  user:
+    name: "{{ workspace_user }}"
+    group: "{{ workspace_group }}"
+    shell: /bin/bash
+    home: "{{ workspace_root }}"
+    create_home: yes
+    system: yes
+  when: jenkins_user_exists.failed is defined and jenkins_user_exists.failed
+
+- name: Ensure workspace directory permissions
+  file:
+    path: "{{ workspace_root }}"
+    state: directory
+    owner: "{{ workspace_user }}"
+    group: "{{ workspace_group }}"
+    mode: '0755'
+  with_items:
+    - "{{ workspace_root }}"
+    - "{{ flutter_path }}"
+    - "{{ android_sdk_path }}"
+
+- name: Setup Debian-based system
+  include_tasks: setup-Debian.yml
+  when: ansible_os_family == "Debian"
+
+- name: Install Fastlane
+  include_tasks: fastlane.yml

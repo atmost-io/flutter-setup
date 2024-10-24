@@ -1,0 +1,13 @@
+---
+- name: Setup Flutter Development Environment
+  hosts: flutter_agents
+  become: yes
+  vars:
+    workspace_user: jenkins
+    workspace_group: jenkins
+    workspace_root: "/home/jenkins"
+    java_version: "17"
+    fastlane_version: "2.225.0"
+  
+  roles:
+    - flutter-dev
